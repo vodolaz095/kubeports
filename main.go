@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"text/tabwriter"
 
@@ -82,7 +81,7 @@ func main() {
 	log.Printf("There are %d pods in the cluster", len(pods.Items))
 	wr := tabwriter.NewWriter(os.Stdout, 10, 25, 0, ' ',
 		tabwriter.StripEscape)
-	fmt.Fprint(wr, "№\tName\tNode\t\n")
+	fmt.Fprint(wr, "№\tName\tNodeIP\t\n")
 	for i := range pods.Items {
 		_, err = fmt.Fprintf(wr, "%v\t%s\t%s\n",
 			1+i, pods.Items[i].Name, pods.Items[i].Status.HostIP,
@@ -95,26 +94,28 @@ func main() {
 	if err != nil {
 		log.Fatalf("error writing data: %s", err)
 	}
-	nodePorts, err := clientset.CoreV1().Services(*namespace).List(ctx, metav1.ListOptions{
-		TypeMeta: metav1.TypeMeta{Kind: "node_port"},
-		Limit:    0,
+	services, err := clientset.CoreV1().Services(*namespace).List(ctx, metav1.ListOptions{
+		Limit: 0,
 	})
 	if err != nil {
 		log.Fatalf("error listing node ports: %s", err)
 	}
-	log.Printf("There are %d NodePorts in the cluster", len(nodePorts.Items))
+	log.Printf("There are %d services in the cluster", len(services.Items))
 
-	fmt.Fprint(wr, "№\tName\tProtocol\tPort\tTarget\tNodePort\tIPs\t\n")
-	for i := range nodePorts.Items {
-		for j := range nodePorts.Items[i].Spec.Ports {
-			_, err = fmt.Fprintf(wr, "%v\t%s\t%s\t%v\t%v\t%v\t%s\t\n",
+	fmt.Fprint(wr, "№\tName\tProtocol\tPort\tTarget\tNodePort\tType\t\n")
+	for i := range services.Items {
+		for j := range services.Items[i].Spec.Ports {
+			_, err = fmt.Fprintf(wr, "%v\t%s - %s\t%s\t%v\t%v\t%v\t%s\t\n",
 				1+i+j,
-				nodePorts.Items[i].Name,
-				nodePorts.Items[i].Spec.Ports[j].Protocol,
-				nodePorts.Items[i].Spec.Ports[j].Port,
-				nodePorts.Items[i].Spec.Ports[j].TargetPort.String(),
-				nodePorts.Items[i].Spec.Ports[j].NodePort,
-				strings.Join(nodePorts.Items[i].Spec.ExternalIPs, ","),
+				services.Items[i].Name,
+				services.Items[i].Kind,
+				services.Items[i].Spec.Ports[j].Protocol,
+				services.Items[i].Spec.Ports[j].Port,
+				services.Items[i].Spec.Ports[j].TargetPort.String(),
+				services.Items[i].Spec.Ports[j].NodePort,
+				services.Items[i].Spec.Type,
+
+				//strings.Join(services.Items[i].Spec.ExternalIPs, ","),
 			)
 		}
 	}

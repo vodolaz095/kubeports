@@ -42,6 +42,9 @@ import (
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
 
+var Subversion = "development"
+var Version = "development"
+
 type exposed struct {
 	Name      string
 	Port      int32
@@ -85,12 +88,14 @@ func main() {
 	} else {
 		match, _ = regexp.Compile(`.`)
 	}
+	log.Printf("KubePorts v%s %s. Please, report bugs here: https://github.com/vodolaz095/kubeports/issues", Version, Subversion)
 
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags(*masterUrl, *kubeconfig)
 	if err != nil {
 		log.Fatalf("error building config from master_url=%s and kubeconfig=%s", *masterUrl, *kubeconfig)
 	}
+
 	log.Printf("Dialing %s...", config.Host)
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)

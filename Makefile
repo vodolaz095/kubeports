@@ -13,6 +13,10 @@ clean:
 
 start: run
 
+vuln:
+	which govulncheck
+	govulncheck ./...
+
 run:
 	go run main.go --master_url=https://$(shell minikube ip):8443 --grep=nginx
 

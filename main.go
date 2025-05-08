@@ -40,7 +40,14 @@ import (
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
 
+type exposed struct {
+	Name      string
+	Port      uint
+	Addresses []string
+}
+
 func main() {
+	//var ret []exposed
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGHUP,
 		syscall.SIGINT,
@@ -68,12 +75,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("error building config from master_url=%s and kubeconfig=%s", *masterUrl, *kubeconfig)
 	}
-
+	log.Printf("Dialing %s...", config.Host)
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Fatalf("error building client from master_url=%s and kubeconfig=%s", *masterUrl, *kubeconfig)
 	}
+
+	// reveal pods
 	pods, err := clientset.CoreV1().Pods(*namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		log.Fatalf("error listing pods: %s", err)
@@ -94,6 +103,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("error writing data: %s", err)
 	}
+
+	// reveal services
 	services, err := clientset.CoreV1().Services(*namespace).List(ctx, metav1.ListOptions{
 		Limit: 0,
 	})
@@ -124,20 +135,25 @@ func main() {
 		log.Fatalf("error writing data: %s", err)
 	}
 
-	// Examples for error handling:
-	// - Use helper functions like e.g. errors.IsNotFound()
-	// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
-	//namespace := "default"
-	//pod := "example-xxxxx"
-	//_, err = clientset.CoreV1().Pods(namespace).Get(context.TODO(), pod, metav1.GetOptions{})
-	//if errors.IsNotFound(err) {
-	//	fmt.Printf("Pod %s in namespace %s not found\n", pod, namespace)
-	//} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-	//	fmt.Printf("Error getting pod %s in namespace %s: %v\n",
-	//		pod, namespace, statusError.ErrStatus.Message)
-	//} else if err != nil {
-	//	panic(err.Error())
-	//} else {
-	//	fmt.Printf("Found pod %s in namespace %s\n", pod, namespace)
-	//}
+	nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{
+		Limit: 0,
+	})
+	if err != nil {
+		log.Fatalf("error listing node ports: %s", err)
+	}
+	log.Printf("There are %d nodes in the cluster", len(nodes.Items))
+	fmt.Fprint(wr, "№\tName\tType\tAddress\t\n")
+	for i := range nodes.Items {
+		_, err = fmt.Fprintf(wr, "%v \t%s \t%s \t%s \t\n",
+			i+1,
+			nodes.Items[i].Name,
+			nodes.Items[i].Status.Addresses[0].Type,
+			nodes.Items[i].Status.Addresses[0].Address,
+		)
+	}
+	err = wr.Flush()
+	if err != nil {
+		log.Fatalf("error writing data: %s", err)
+	}
+
 }

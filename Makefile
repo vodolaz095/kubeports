@@ -3,7 +3,7 @@ export minikube_ip=$(shell minikube ip)
 start: run
 
 run:
-	go run main.go --master_url=https://$(minikube_ip):8443
+	go run main.go --master_url=https://$(minikube_ip):8443 --grep=nginx
 
 deps:
 	go mod download

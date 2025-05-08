@@ -8,15 +8,13 @@ export subver=$(shell hostname)_on_$(shell date -u '+%Y-%m-%d_%I:%M:%S%p')
 export patchVersion=$(shell git log --format='%h' | wc -l)
 export ver=$(majorVersion).$(minorVersion).$(patchVersion).$(gittip)-$(arch)
 
-export minikube_ip=$(shell minikube ip)
-
 clean:
 	rm -f build/$(app)
 
 start: run
 
 run:
-	go run main.go --master_url=https://$(minikube_ip):8443 --grep=nginx
+	go run main.go --master_url=https://$(shell minikube ip):8443 --grep=nginx
 
 deps:
 	go mod download
@@ -40,3 +38,6 @@ test:
 build: clean
 # https://www.reddit.com/r/golang/comments/10te58n/error_loading_shared_library_libresolvso2_no_such/
 	CGO_ENABLED=0 go build -ldflags "-X main.Subversion=$(subver) -X main.Version=$(ver)" -o build/$(app) main.go
+
+binary:
+	./build/kubeports --master_url=https://$(shell minikube ip):8443 --grep=nginx

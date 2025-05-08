@@ -63,7 +63,7 @@ func main() {
 		syscall.SIGQUIT,
 		syscall.SIGABRT)
 	defer cancel()
-
+	var i, j int
 	var kubeconfig *string
 	var masterUrl *string
 	var namespace *string
@@ -112,11 +112,10 @@ func main() {
 		log.Fatalf("error listing node ports: %s", err)
 	}
 	log.Printf("Nodes found:")
-	fmt.Fprint(wr, "№\tName\tType\tAddress\t\n")
-	for i := range nodes.Items {
-		for j := range nodes.Items[i].Status.Addresses {
-			_, err = fmt.Fprintf(wr, "%v \t%s \t%s \t%s \t\n",
-				i+1,
+	fmt.Fprint(wr, "Name\tType\tAddress\t\n")
+	for i = range nodes.Items {
+		for j = range nodes.Items[i].Status.Addresses {
+			_, err = fmt.Fprintf(wr, "%v \t%s \t%s \t\n",
 				nodes.Items[i].Name,
 				nodes.Items[i].Status.Addresses[j].Type,
 				nodes.Items[i].Status.Addresses[j].Address,
@@ -130,6 +129,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error writing data: %s", err)
 	}
+	fmt.Println()
 
 	// reveal pods
 	pods, err := clientset.CoreV1().Pods(*namespace).List(ctx, metav1.ListOptions{})
@@ -137,13 +137,13 @@ func main() {
 		log.Fatalf("error listing pods: %s", err)
 	}
 	log.Printf("Podes matching `%s` are found:", match.String())
-	fmt.Fprint(wr, "№\tName\tNodeIP\t\n")
-	for i := range pods.Items {
+	fmt.Fprint(wr, "Name\tNodeIP\t\n")
+	for i = range pods.Items {
 		if !match.MatchString(pods.Items[i].Name) {
 			continue
 		}
-		_, err = fmt.Fprintf(wr, "%v\t%s\t%s\n",
-			1+i, pods.Items[i].Name, pods.Items[i].Status.HostIP,
+		_, err = fmt.Fprintf(wr, "%s\t%s\n",
+			pods.Items[i].Name, pods.Items[i].Status.HostIP,
 		)
 		if err != nil {
 			log.Fatalf("error writing data: %s", err)
@@ -153,6 +153,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error writing data: %s", err)
 	}
+	fmt.Println()
 
 	// reveal services
 	services, err := clientset.CoreV1().Services(*namespace).List(ctx, metav1.ListOptions{
@@ -163,14 +164,13 @@ func main() {
 	}
 	log.Printf("Services matching `%s` are found:", match.String())
 
-	fmt.Fprint(wr, "№\tName\tProtocol\tPort\tTarget\tNodePort\tType\t\n")
-	for i := range services.Items {
+	fmt.Fprint(wr, "Name\tProtocol\tPort\tTarget\tNodePort\tType\t\n")
+	for i = range services.Items {
 		if !match.MatchString(services.Items[i].Name) {
 			continue
 		}
-		for j := range services.Items[i].Spec.Ports {
-			_, err = fmt.Fprintf(wr, "%v\t%s \t%s\t%v\t%v\t%v\t%s\t\n",
-				1+i+j,
+		for j = range services.Items[i].Spec.Ports {
+			_, err = fmt.Fprintf(wr, "%s\t%s\t%v\t%v\t%v\t%s\t\n",
 				services.Items[i].Name,
 				services.Items[i].Spec.Ports[j].Protocol,
 				services.Items[i].Spec.Ports[j].Port,
@@ -195,16 +195,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("error writing data: %s", err)
 	}
+	fmt.Println()
 
 	log.Printf("Writing connection strings for exposed by NodePort services")
-	sort.Slice(ret, func(i, j int) bool {
-		return ret[i].Name > ret[j].Name
+	sort.Slice(ret, func(l, m int) bool {
+		return ret[l].Name > ret[m].Name
 	})
-	fmt.Fprint(wr, "№\tName\tProtocol\tConnection\t\n")
-	for i := range ret {
-		for j := range ret[i].Addresses {
-			_, err = fmt.Fprintf(wr, "%v \t%s \t%s \t%s:%v\t\n",
-				1+i+j,
+	fmt.Fprint(wr, "Name\tProtocol\tConnection\t\n")
+	for i = range ret {
+		for j = range ret[i].Addresses {
+			_, err = fmt.Fprintf(wr, "%s \t%s \t%s:%v\t\n",
 				ret[i].Name,
 				ret[i].Protocol,
 				ret[i].Addresses[j],
@@ -219,4 +219,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("error writing data: %s", err)
 	}
+	fmt.Println()
+	log.Println("Goodbye!")
 }

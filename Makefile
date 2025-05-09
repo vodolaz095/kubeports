@@ -11,14 +11,21 @@ export ver=$(majorVersion).$(minorVersion).$(patchVersion).$(gittip)-$(arch)
 clean:
 	rm -f build/$(app)
 
-start: run
+run: start
 
 vuln:
 	which govulncheck
 	govulncheck ./...
 
-run:
+start:
+	go run main.go --master_url=https://$(shell minikube ip):8443
+
+start/nginx:
 	go run main.go --master_url=https://$(shell minikube ip):8443 --grep=nginx
+
+start/jaeger:
+	go run main.go --master_url=https://$(shell minikube ip):8443 --grep=nginx
+
 
 deps:
 	go mod download
@@ -29,12 +36,22 @@ minikube:
 	minikube start
 	minikube node list
 
-up:
+up/nginx:
 	minikube kubectl -- apply -f contrib/two_nginx.yaml
 
-down:
+up/jaeger:
+	minikube kubectl -- apply -f contrib/jaeger.yaml
+
+down/nginx:
 	minikube kubectl -- delete deployment nginx-deployment
 	minikube kubectl -- delete service nginx-service
+
+down/jaeger:
+	minikube kubectl -- delete pod jaeger-pod
+	minikube kubectl -- delete service jaeger-service
+	minikube kubectl -- delete persistentVolume jaeger-pv-volume
+	minikube kubectl -- kubectl delete -n default persistentvolumeclaim jaeger-pv-claim
+
 
 test:
 	curl -v http://$(minikube_ip):31080

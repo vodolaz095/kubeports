@@ -46,10 +46,11 @@ var Subversion = "development"
 var Version = "development"
 
 type exposed struct {
-	Name      string
-	Port      int32
-	Protocol  string
-	Addresses []string
+	Name        string
+	Description string
+	Port        int32
+	Protocol    string
+	Addresses   []string
 }
 
 func main() {
@@ -183,10 +184,11 @@ func main() {
 			}
 			if services.Items[i].Spec.Ports[j].NodePort != 0 && services.Items[i].Spec.Type == "NodePort" {
 				ret = append(ret, exposed{
-					Name:      services.Items[i].Name,
-					Protocol:  string(services.Items[i].Spec.Ports[j].Protocol),
-					Port:      services.Items[i].Spec.Ports[j].NodePort,
-					Addresses: nodeIPs,
+					Name:        services.Items[i].Name,
+					Description: services.Items[i].Spec.Ports[j].Name,
+					Protocol:    string(services.Items[i].Spec.Ports[j].Protocol),
+					Port:        services.Items[i].Spec.Ports[j].NodePort,
+					Addresses:   nodeIPs,
 				})
 			}
 		}
@@ -201,11 +203,12 @@ func main() {
 	sort.Slice(ret, func(l, m int) bool {
 		return ret[l].Name > ret[m].Name
 	})
-	fmt.Fprint(wr, "Name\tProtocol\tConnection\t\n")
+	fmt.Fprint(wr, "Service\tName\tProtocol\tConnection\t\n")
 	for i = range ret {
 		for j = range ret[i].Addresses {
-			_, err = fmt.Fprintf(wr, "%s \t%s \t%s:%v\t\n",
+			_, err = fmt.Fprintf(wr, "%s\t%s\t%s\t%s:%v\t\n",
 				ret[i].Name,
+				ret[i].Description,
 				ret[i].Protocol,
 				ret[i].Addresses[j],
 				ret[i].Port,

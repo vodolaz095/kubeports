@@ -49,8 +49,8 @@ down/nginx:
 down/jaeger:
 	minikube kubectl -- delete pod jaeger-pod
 	minikube kubectl -- delete service jaeger-service
-	minikube kubectl -- delete persistentVolume jaeger-pv-volume
-	minikube kubectl -- kubectl delete -n default persistentvolumeclaim jaeger-pv-claim
+	minikube kubectl -- delete persistentVolume jaeger-pv-storage
+	minikube kubectl -- delete persistentvolumeclaim jaeger-pv-claim
 
 
 test:

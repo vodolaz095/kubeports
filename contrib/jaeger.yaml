@@ -13,6 +13,7 @@ spec:
     - ReadWriteOnce
   hostPath:
     path: "/jaeger"
+    type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -43,6 +44,7 @@ spec:
     - name: jaeger-pv-storage
       persistentVolumeClaim:
         claimName: jaeger-pv-claim
+  nodeName: minikube
   containers:
     - name: jaeger
       image: docker.io/jaegertracing/all-in-one:1.67.0

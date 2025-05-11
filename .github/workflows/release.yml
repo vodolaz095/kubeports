@@ -1,0 +1,80 @@
+name: make release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    services:
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.2'
+          cache-dependency-path: go.sum
+
+      - name: install govulncheck utility
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: scan for vulnerable packages
+        run: make vuln
+
+      - name: build binary for linux on AMD64
+        env:
+          GOOS: linux
+          CGO_ENABLED: 0
+          GOARCH: amd64
+        run: go build -ldflags "-X main.Version=${{ github.sha }}" -o build/kubeports_linux_amd64 main.go
+
+      - name: build binary for linux on ARM 6
+        env:
+          GOOS: linux
+          CGO_ENABLED: 0
+          GOARCH: arm
+          GOARM: 6
+        run: go build -ldflags "-X main.Version=${{ github.sha }}" -o build/kubeports_linux_arm6 main.go
+
+      - name: build binary for linux on ARM 7
+        env:
+          GOOS: linux
+          CGO_ENABLED: 0
+          GOARCH: arm
+          GOARM: 7
+        run: go build -ldflags "-X main.Version=${{ github.sha }}" -o build/kubeports_linux_arm7 main.go
+
+      - name: build binary for windows on amd64
+        env:
+          GOOS: windows
+          CGO_ENABLED: 0
+          GOARCH: amd64
+        run: go build -ldflags "-X main.Version=${{ github.sha }}" -o build/kubeports.exe main.go
+
+      - name: build binary for macos on amd64
+        env:
+          GOOS: darwin
+          GOARCH: amd64
+          CGO_ENABLED: 0
+        run: go build -ldflags "-X main.Version=${{ github.sha }}" -o build/kubeports_darwin_amd64 main.go
+
+      - name: make md5 signature file
+        run: md5sum build/* > build/kubeports.md5
+
+      - name: expose build result
+        run: ls -l build/
+
+      - name: release
+        uses: ncipollo/release-action@v1
+        with:
+          draft: true
+          name: "Temporary release"
+          body: "Code is generated from commit https://github.com/vodolaz095/kubeports/commit/${{ github.sha }}"
+          generateReleaseNotes: true
+          commit: "${{ github.sha }}"
+          tag: "${{ github.ref }}"
+          artifacts: "build/kubeports*"

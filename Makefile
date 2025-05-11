@@ -1,5 +1,5 @@
 export app=kubeports
-export majorVersion=0
+export majorVersion=1
 export minorVersion=1
 
 export arch=$(shell uname)-$(shell uname -m)

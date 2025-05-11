@@ -57,3 +57,6 @@ build: clean
 
 binary:
 	./build/kubeports --master_url=https://$(shell minikube ip):8443 --grep=nginx
+
+tag:
+	git tag "v$(majorVersion).$(minorVersion).$(patchVersion)"

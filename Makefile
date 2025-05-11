@@ -43,15 +43,10 @@ up/jaeger:
 	minikube kubectl -- apply -f contrib/jaeger.yaml
 
 down/nginx:
-	minikube kubectl -- delete deployment nginx-deployment
-	minikube kubectl -- delete service nginx-service
+	minikube kubectl -- delete -f contrib/two_nginx.yaml
 
 down/jaeger:
-	minikube kubectl -- delete pod jaeger-pod
-	minikube kubectl -- delete service jaeger-service
-	minikube kubectl -- delete persistentVolume jaeger-pv-storage
-	minikube kubectl -- delete persistentvolumeclaim jaeger-pv-claim
-
+	minikube kubectl -- delete -f contrib/jaeger.yaml
 
 test:
 	curl -v http://$(minikube_ip):31080

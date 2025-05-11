@@ -12,7 +12,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/jaeger"
+    path: "/home/docker/jaeger"
     type: DirectoryOrCreate
 ---
 apiVersion: v1
@@ -29,41 +29,54 @@ spec:
     requests:
       storage: 1Gi
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: jaeger-pod
+  name: jaeger-deployment
   labels:
     app: jaeger
 spec:
-  os:
-    name: linux
-  nodeSelector:
-    kubernetes.io/os: linux
-  volumes:
-    - name: jaeger-pv-storage
-      persistentVolumeClaim:
-        claimName: jaeger-pv-claim
-  nodeName: minikube
-  containers:
-    - name: jaeger
-      image: docker.io/jaegertracing/all-in-one:1.67.0
-      ports:
-        - containerPort: 16686
-        - containerPort: 14268
-        - containerPort: 4318
-      volumeMounts:
-        - mountPath: /jaeger
-          name: jaeger-pv-storage
-      env:
-        - name: SPAN_STORAGE_TYPE
-          value: badger
-        - name: BADGER_EPHEMERAL
-          value: "false"
-        - name: BADGER_DIRECTORY_VALUE
-          value: /jaeger/data
-        - name: BADGER_DIRECTORY_KEY
-          value: /jaeger/key
+  selector:
+    matchLabels:
+      app: jaeger
+  replicas: 1 # important
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      os:
+        name: linux
+      nodeSelector:
+        kubernetes.io/os: linux
+      nodeName: minikube
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 10001
+      volumes:
+        - name: jaeger-pv-storage
+          persistentVolumeClaim:
+            claimName: jaeger-pv-claim
+      containers:
+        - name: jaeger
+          image: docker.io/jaegertracing/all-in-one:1.67.0
+          ports:
+            - containerPort: 16686
+            - containerPort: 14268
+            - containerPort: 4318
+          volumeMounts:
+            - mountPath: /jaeger
+              name: jaeger-pv-storage
+          env:
+            - name: SPAN_STORAGE_TYPE
+              value: badger
+            - name: BADGER_EPHEMERAL
+              value: "false"
+            - name: BADGER_DIRECTORY_VALUE
+              value: /jaeger/data
+            - name: BADGER_DIRECTORY_KEY
+              value: /jaeger/key
 ---
 apiVersion: v1
 kind: Service
